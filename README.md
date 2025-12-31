@@ -1,135 +1,311 @@
-# Paul Graham GPT
+# Imran Khan GPT
 
-AI-powered search and chat for [Paul Graham's](https://twitter.com/paulg) [essays](http://www.paulgraham.com/articles.html).
+AI-powered search and chat application for Imran Khan's speeches, tweets, and interviews using Google Gemini Flash 2.0, Firebase, and LlamaIndex.
 
-All code & data used is 100% open-source.
+## 🎯 Features
 
-## Dataset
+- **Semantic Search**: Find relevant content from Imran Khan's speeches, tweets, and interviews
+- **AI Chat**: Ask questions and get answers powered by Google Gemini Flash 2.0
+- **Multi-Source Data**: Combines YouTube videos, Twitter posts, speeches, and interviews
+- **Real-time Streaming**: Stream AI responses in real-time
+- **Source Attribution**: See the exact source (YouTube, Twitter, etc.) for each result
 
-The dataset is a CSV file containing all text & embeddings used.
+## 🏗️ Tech Stack
 
-Download it [here](https://drive.google.com/file/d/1BxcPw2mn0VYFucc62wlt9H0nQiOu38ki/view?usp=sharing).
+- **Frontend**: Next.js 13, React, TypeScript, Tailwind CSS
+- **Database**: Firebase Firestore (metadata storage)
+- **Vector Database**: Pinecone (vector embeddings)
+- **LLM**: Google Gemini Flash 2.0
+- **Embeddings**: Google Gemini Text Embedding (text-embedding-004)
+- **Framework**: LlamaIndex (document processing and orchestration)
 
-I recommend getting familiar with fetching, cleaning, and storing data as outlined in the scraping and embedding scripts below, but feel free to skip those steps and just use the dataset.
+## 📋 Prerequisites
 
-## How It Works
+Before you begin, you'll need accounts and API keys for:
 
-Paul Graham GPT provides 2 things:
+1. **Google AI Studio** (for Gemini API)
+   - Get your API key: https://makersuite.google.com/app/apikey
 
-1. A search interface.
-2. A chat interface.
+2. **Firebase**
+   - Create a project: https://console.firebase.google.com/
+   - Enable Firestore Database
 
-### Search
+3. **Pinecone**
+   - Create account: https://www.pinecone.io/
+   - Free tier includes: 1 index, 100k vectors
 
-Search was created with [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings) (`text-embedding-ada-002`).
+4. **Optional - Twitter Developer Account** (for scraping tweets)
+   - Apply: https://developer.twitter.com/
 
-First, we loop over the essays and generate embeddings for each chunk of text.
+5. **Optional - YouTube Data API** (for video metadata)
+   - Enable API: https://console.cloud.google.com/apis/library/youtube.googleapis.com
 
-Then in the app we take the user's search query, generate an embedding, and use the result to find the most similar passages from the book.
+## 🚀 Setup Instructions
 
-The comparison is done using cosine similarity across our database of vectors.
-
-Our database is a Postgres database with the [pgvector](https://github.com/pgvector/pgvector) extension hosted on [Supabase](https://supabase.com/).
-
-Results are ranked by similarity score and returned to the user.
-
-### Chat
-
-Chat builds on top of search. It uses search results to create a prompt that is fed into GPT-3.5-turbo.
-
-This allows for a chat-like experience where the user can ask questions about the book and get answers.
-
-## Running Locally
-
-Here's a quick overview of how to run it locally.
-
-### Requirements
-
-1. Set up OpenAI
-
-You'll need an OpenAI API key to generate embeddings.
-
-2. Set up Supabase and create a database
-
-Note: You don't have to use Supabase. Use whatever method you prefer to store your data. But I like Supabase and think it's easy to use.
-
-There is a schema.sql file in the root of the repo that you can use to set up the database.
-
-Run that in the SQL editor in Supabase as directed.
-
-I recommend turning on Row Level Security and setting up a service role to use with the app.
-
-### Repo Setup
-
-3. Clone repo
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/mckaywrigley/paul-graham-gpt.git
+git clone https://github.com/yourusername/imran-khan-gpt.git
+cd imran-khan-gpt
 ```
 
-4. Install dependencies
+### 2. Install Dependencies
 
 ```bash
-npm i
+npm install
 ```
 
-5. Set up environment variables
+### 3. Set Up Environment Variables
 
-Create a .env.local file in the root of the repo with the following variables:
+Create a `.env.local` file in the root directory:
 
 ```bash
-OPENAI_API_KEY=
-
-NEXT_PUBLIC_SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
+cp .env.example .env.local
 ```
 
-### Dataset
-
-6. Run scraping script
+Fill in your API keys and configuration:
 
 ```bash
-npm run scrape
+# Google Gemini API
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Firebase Admin (Service Account)
+FIREBASE_CLIENT_EMAIL=your_service_account_email
+FIREBASE_PRIVATE_KEY="your_private_key"
+
+# Pinecone
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_ENVIRONMENT=your_pinecone_environment
+PINECONE_INDEX_NAME=imran-khan-index
+
+# Optional: Twitter API
+TWITTER_BEARER_TOKEN=your_twitter_bearer_token
+
+# Optional: YouTube API
+YOUTUBE_API_KEY=your_youtube_api_key
 ```
 
-This scrapes all of the essays from Paul Graham's website and saves them to a json file.
+### 4. Set Up Firebase
 
-7. Run embedding script
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or select existing
+3. Enable **Firestore Database**
+4. Go to Project Settings → Service Accounts
+5. Generate new private key (download JSON)
+6. Copy the values to your `.env.local` file
+
+### 5. Set Up Pinecone
+
+1. Go to [Pinecone Console](https://app.pinecone.io/)
+2. Create a new index:
+   - Name: `imran-khan-index`
+   - Dimensions: `768` (for Gemini text-embedding-004)
+   - Metric: `cosine`
+   - Environment: Copy from your Pinecone dashboard
+3. Copy API key and environment to `.env.local`
+
+### 6. Collect Data
+
+#### Option A: YouTube Videos
+
+1. Update `scripts/scrape-youtube.ts` with Imran Khan video IDs
+2. Run the scraper:
 
 ```bash
-npm run embed
+npm run scrape:youtube
 ```
 
-This reads the json file, generates embeddings for each chunk of text, and saves the results to your database.
+#### Option B: Twitter/X Posts
 
-There is a 200ms delay between each request to avoid rate limiting.
+1. Get Twitter API credentials
+2. Add to `.env.local`
+3. Run the scraper:
 
-This process will take 20-30 minutes.
+```bash
+npm run scrape:twitter
+```
 
-### App
+#### Option C: Manual Data
 
-8. Run app
+Create a JSON file at `scripts/ik-data.json` following this structure:
+
+```json
+{
+  "current_date": "2024-01-15",
+  "author": "Imran Khan",
+  "url": "https://imrankhan.pk",
+  "length": 0,
+  "tokens": 0,
+  "contents": [
+    {
+      "id": "speech_001",
+      "title": "Speech Title",
+      "url": "https://example.com/speech",
+      "date": "2024-01-15",
+      "source": "speech",
+      "content": "Full speech text here...",
+      "length": 1000,
+      "tokens": 250,
+      "chunks": []
+    }
+  ]
+}
+```
+
+### 7. Combine All Data Sources
+
+```bash
+npm run scrape:all
+```
+
+This combines data from all sources into `scripts/ik-data.json`.
+
+### 8. Ingest Data (Create Embeddings)
+
+This step:
+- Chunks the content using LlamaIndex
+- Generates embeddings with Gemini
+- Stores vectors in Pinecone
+- Stores metadata in Firebase
+
+```bash
+npm run ingest
+```
+
+**Note**: This process may take 20-30 minutes depending on data volume. There's a built-in rate limit to avoid API throttling.
+
+### 9. Run the Application
 
 ```bash
 npm run dev
 ```
 
-## Credits
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Thanks to [Paul Graham](https://twitter.com/paulg) for his writing.
+## 📁 Project Structure
 
-I highly recommend you read his essays.
+```
+imran-khan-gpt/
+├── components/           # React components
+│   ├── Answer/          # Animated answer display
+│   ├── Footer.tsx       # Footer component
+│   └── Navbar.tsx       # Navigation bar
+├── lib/                 # Utility libraries
+│   ├── firebase.ts      # Firebase client config
+│   ├── firebase-admin.ts # Firebase admin config
+│   ├── gemini-stream.ts # Gemini streaming utilities
+│   └── llamaindex-config.ts # LlamaIndex setup
+├── pages/
+│   ├── api/
+│   │   ├── answer.ts    # Gemini chat API
+│   │   └── search.ts    # Vector search API
+│   ├── index.tsx        # Main application page
+│   └── _app.tsx         # Next.js app wrapper
+├── scripts/
+│   ├── scrape-youtube.ts    # YouTube scraper
+│   ├── scrape-twitter.ts    # Twitter scraper
+│   ├── scrape-all.ts        # Combine all sources
+│   └── ingest-llamaindex.ts # Data ingestion
+├── styles/
+│   └── globals.css      # Global styles
+├── types/
+│   └── index.ts         # TypeScript definitions
+└── .env.local           # Environment variables (create this)
+```
 
-3 years ago they convinced me to learn to code, and it changed my life.
+## 🔧 NPM Scripts
 
-## Contact
+```bash
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run start            # Start production server
+npm run scrape:youtube   # Scrape YouTube videos
+npm run scrape:twitter   # Scrape Twitter posts
+npm run scrape:all       # Combine all data sources
+npm run ingest          # Process and embed data
+```
 
-If you have any questions, feel free to reach out to me on [Twitter](https://twitter.com/mckaywrigley)!
+## 🎨 Customization
 
-## Notes
+### Adding New Data Sources
 
-I sacrificed composability for simplicity in the app.
+1. Create a new scraper in `scripts/scrape-[source].ts`
+2. Follow the `IKContent` type structure
+3. Add the source to `scrape-all.ts`
+4. Run `npm run scrape:all` and `npm run ingest`
 
-Yes, you can make things more modular and reusable.
+### Changing the LLM Model
 
-But I kept pretty much everything in the homepage component for the sake of simplicity.
+Edit `lib/llamaindex-config.ts` and `pages/api/answer.ts`:
+
+```typescript
+// For a different Gemini model
+model: "gemini-1.5-pro" // or "gemini-1.5-flash"
+```
+
+### Adjusting Chunk Size
+
+Edit `lib/llamaindex-config.ts`:
+
+```typescript
+Settings.chunkSize = 512;      // Default: 512
+Settings.chunkOverlap = 50;    // Default: 50
+```
+
+## 🐛 Troubleshooting
+
+### "Module not found" errors
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Firebase permission errors
+- Check that Firestore is enabled
+- Verify service account has correct permissions
+- Ensure private key is properly formatted in `.env.local`
+
+### Pinecone dimension mismatch
+- Gemini text-embedding-004 uses 768 dimensions
+- Make sure your Pinecone index is created with dimension=768
+
+### Rate limiting errors
+- The scripts include delays to prevent rate limiting
+- If you hit limits, increase delays in scraping scripts
+- Consider using paid tiers for higher limits
+
+## 📝 Notes
+
+- The free tier of Pinecone supports up to 100k vectors
+- Gemini API has generous free quotas but check current limits
+- Firebase Firestore free tier: 50k reads/20k writes per day
+- Always respect rate limits and terms of service
+
+## 📄 License
+
+MIT License - feel free to use this project for learning and development.
+
+## 🙏 Credits
+
+- Original Paul Graham GPT by [Mckay Wrigley](https://twitter.com/mckaywrigley)
+- Adapted for Imran Khan content using modern AI stack
+- Built with [Next.js](https://nextjs.org/), [LlamaIndex](https://www.llamaindex.ai/), and [Google Gemini](https://deepmind.google/technologies/gemini/)
+
+## 📞 Support
+
+For issues and questions:
+- Open an issue on GitHub
+- Check existing issues for solutions
+- Review the troubleshooting section above
+
+---
+
+**Disclaimer**: This is an educational project demonstrating AI-powered semantic search. All content belongs to its original creators and sources.
