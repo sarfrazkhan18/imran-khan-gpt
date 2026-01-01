@@ -1,0 +1,69 @@
+{
+  "current_date": "2024-01-15",
+  "author": "Imran Khan",
+  "url": "https://imrankhan.pk",
+  "length": 0,
+  "tokens": 0,
+  "contents": [
+    {
+      "id": "sample_001",
+      "title": "Vision for New Pakistan",
+      "url": "https://example.com/vision",
+      "date": "2024-01-15",
+      "source": "speech",
+      "content": "My vision for Pakistan is to create a nation where justice prevails, where every citizen has access to quality education and healthcare, and where our youth can dream big and achieve their goals. We will build a corruption-free society based on meritocracy and the rule of law. Pakistan has tremendous potential, and with the right leadership and policies, we can become a prosperous nation that takes care of all its citizens.",
+      "length": 380,
+      "tokens": 75,
+      "chunks": [],
+      "language": "en"
+    },
+    {
+      "id": "sample_002",
+      "title": "Economic Reform Plan",
+      "url": "https://example.com/economy",
+      "date": "2024-01-10",
+      "source": "interview",
+      "content": "Pakistan's economic revival requires structural reforms. We must focus on export-led growth, attract foreign investment, and create an environment where businesses can thrive. Our priority is to reduce poverty and create job opportunities for our youth through industrialization and technology. We will implement policies that encourage entrepreneurship and innovation, while ensuring that economic growth benefits all segments of society, particularly the underprivileged.",
+      "length": 450,
+      "tokens": 85,
+      "chunks": [],
+      "language": "en"
+    },
+    {
+      "id": "sample_003",
+      "title": "Education First Initiative",
+      "url": "https://example.com/education",
+      "date": "2024-01-05",
+      "source": "speech",
+      "content": "Education is the foundation of our nation's future. We are committed to providing free, quality education to every Pakistani child. Our education system will emphasize critical thinking, creativity, and technical skills to prepare our youth for the challenges of the 21st century. We will invest heavily in teacher training, modern infrastructure, and technology integration in classrooms to ensure our children receive world-class education.",
+      "length": 420,
+      "tokens": 80,
+      "chunks": [],
+      "language": "en"
+    },
+    {
+      "id": "sample_004",
+      "title": "Healthcare for All",
+      "url": "https://example.com/healthcare",
+      "date": "2023-12-28",
+      "source": "speech",
+      "content": "Universal healthcare is a fundamental right, not a privilege. Through the Sehat Card program, we are ensuring that every Pakistani has access to quality medical care without financial burden. This initiative will transform healthcare delivery across the nation, providing coverage for major illnesses and ensuring that no family is pushed into poverty due to medical expenses. We are also building new hospitals and upgrading existing facilities.",
+      "length": 440,
+      "tokens": 82,
+      "chunks": [],
+      "language": "en"
+    },
+    {
+      "id": "sample_005",
+      "title": "Youth Empowerment Program",
+      "url": "https://example.com/youth",
+      "date": "2023-12-20",
+      "source": "interview",
+      "content": "Our youth are our greatest asset. We are launching comprehensive programs to equip young Pakistanis with skills needed for the modern economy. This includes vocational training, entrepreneurship support, and access to technology. We want to create opportunities for our youth to succeed in Pakistan rather than seeking opportunities abroad. Through sports, arts, and culture initiatives, we are also ensuring their holistic development.",
+      "length": 410,
+      "tokens": 78,
+      "chunks": [],
+      "language": "en"
+    }
+  ]
+}
