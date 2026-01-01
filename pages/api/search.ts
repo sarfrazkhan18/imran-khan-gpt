@@ -1,9 +1,9 @@
-import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SearchResult } from "@/types";
+import { getCollection } from "@/lib/chroma";
 
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
@@ -25,29 +25,34 @@ const handler = async (req: Request): Promise<Response> => {
     const embeddingResult = await embeddingModel.embedContent(input);
     const embedding = embeddingResult.embedding.values;
 
-    // Query Pinecone
-    const pinecone = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY!,
-    });
+    // Query ChromaDB
+    const collection = await getCollection();
 
-    const index = pinecone.Index(process.env.PINECONE_INDEX_NAME || "imran-khan-index");
-
-    const queryResponse = await index.query({
-      vector: embedding,
-      topK: matches || 5,
-      includeMetadata: true,
+    const queryResponse = await collection.query({
+      queryEmbeddings: [Array.from(embedding)],
+      nResults: matches || 5,
     });
 
     // Format results
-    const results: SearchResult[] = queryResponse.matches?.map((match) => ({
-      id: match.id,
-      content_title: (match.metadata?.content_title as string) || "",
-      content_url: (match.metadata?.content_url as string) || "",
-      content_date: (match.metadata?.content_date as string) || "",
-      content_source: (match.metadata?.content_source as any) || "youtube",
-      content: (match.metadata?.text as string) || "",
-      score: match.score || 0,
-    })) || [];
+    const results: SearchResult[] = [];
+
+    if (queryResponse.ids && queryResponse.ids[0]) {
+      for (let i = 0; i < queryResponse.ids[0].length; i++) {
+        const metadata = queryResponse.metadatas?.[0]?.[i];
+        const document = queryResponse.documents?.[0]?.[i];
+        const distance = queryResponse.distances?.[0]?.[i];
+
+        results.push({
+          id: queryResponse.ids[0][i],
+          content_title: (metadata?.content_title as string) || "",
+          content_url: (metadata?.content_url as string) || "",
+          content_date: (metadata?.content_date as string) || "",
+          content_source: (metadata?.content_source as any) || "youtube",
+          content: document || "",
+          score: distance ? 1 - distance : 0, // Convert distance to similarity score
+        });
+      }
+    }
 
     return new Response(JSON.stringify(results), { status: 200 });
   } catch (error) {

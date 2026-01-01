@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
