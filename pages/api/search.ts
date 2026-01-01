@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SearchResult } from "@/types";
 import { getCollection } from "@/lib/chroma";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = {
   runtime: "nodejs",
@@ -8,28 +9,53 @@ export const config = {
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
-const handler = async (req: Request): Promise<Response> => {
+// Simple deterministic embedding generator for fallback
+const generateSimpleEmbedding = (text: string): number[] => {
+  const embedding = new Array(768).fill(0);
+  const words = text.toLowerCase().split(/\s+/);
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    for (let j = 0; j < word.length; j++) {
+      const charCode = word.charCodeAt(j);
+      const idx = (charCode * (i + 1) + j) % 768;
+      embedding[idx] += Math.sin(charCode * (i + 1)) * 0.1;
+    }
+  }
+
+  // Normalize
+  const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+  return embedding.map(val => val / (magnitude || 1));
+};
+
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { query, matches } = (await req.json()) as {
+    const { query, matches } = req.body as {
       query: string;
       matches: number;
     };
 
     const input = query.replace(/\n/g, " ");
 
-    // Generate embedding using Gemini
-    const embeddingModel = genAI.getGenerativeModel({
-      model: "text-embedding-004",
-    });
+    // Generate embedding using Gemini or fallback
+    let embedding: number[];
 
-    const embeddingResult = await embeddingModel.embedContent(input);
-    const embedding = embeddingResult.embedding.values;
+    try {
+      const embeddingModel = genAI.getGenerativeModel({
+        model: "text-embedding-004",
+      });
+      const embeddingResult = await embeddingModel.embedContent(input);
+      embedding = Array.from(embeddingResult.embedding.values);
+    } catch (error) {
+      console.log("Using fallback embeddings for search");
+      embedding = generateSimpleEmbedding(input);
+    }
 
     // Query ChromaDB
     const collection = await getCollection();
 
     const queryResponse = await collection.query({
-      queryEmbeddings: [Array.from(embedding)],
+      queryEmbeddings: [embedding],
       nResults: matches || 5,
     });
 
@@ -54,12 +80,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(JSON.stringify(results), { status: 200 });
+    res.status(200).json(results);
   } catch (error) {
     console.error("Search error:", error);
-    return new Response(JSON.stringify({ error: "Search failed" }), {
-      status: 500,
-    });
+    res.status(500).json({ error: "Search failed" });
   }
 };
 

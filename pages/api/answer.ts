@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = {
   runtime: "nodejs",
@@ -6,9 +7,9 @@ export const config = {
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
-const handler = async (req: Request): Promise<Response> => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { prompt, context } = (await req.json()) as {
+    const { prompt, context } = req.body as {
       prompt: string;
       context: string;
     };
@@ -39,34 +40,27 @@ Instructions:
 
     const result = await model.generateContentStream(fullPrompt);
 
-    // Create a readable stream for the response
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            controller.enqueue(encoder.encode(text));
-          }
-          controller.close();
-        } catch (error) {
-          controller.error(error);
-        }
-      },
-    });
+    // Set headers for streaming
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    // Stream the response
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      if (text) {
+        res.write(text);
+      }
+    }
+
+    res.end();
   } catch (error) {
     console.error("Answer error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate answer" }), {
-      status: 500,
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to generate answer" });
+    } else {
+      res.end();
+    }
   }
 };
 
