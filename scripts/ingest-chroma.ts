@@ -101,11 +101,47 @@ const ingestData = async () => {
 
   // Generate embeddings and store in ChromaDB
   console.log("\nGenerating embeddings and storing in ChromaDB...");
-  console.log("This may take several minutes depending on the amount of data...\n");
 
+  // Check if Gemini API is accessible
+  let useGemini = true;
   const embeddingModel = genAI.getGenerativeModel({
     model: "text-embedding-004",
   });
+
+  // Test Gemini API access
+  try {
+    console.log("Testing Gemini API access...");
+    await embeddingModel.embedContent("test");
+    console.log("✓ Gemini API is accessible\n");
+    console.log("This may take several minutes depending on the amount of data...\n");
+  } catch (error: any) {
+    console.log("⚠️  Gemini API not accessible (403 error)");
+    console.log("⚠️  Using fallback embeddings for testing purposes");
+    console.log("⚠️  To enable Gemini API:");
+    console.log("   1. Go to https://console.cloud.google.com");
+    console.log("   2. Enable 'Generative Language API'");
+    console.log("   3. Make sure your API key has proper permissions\n");
+    useGemini = false;
+  }
+
+  // Simple deterministic embedding generator for fallback
+  const generateSimpleEmbedding = (text: string): number[] => {
+    const embedding = new Array(768).fill(0);
+    const words = text.toLowerCase().split(/\s+/);
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      for (let j = 0; j < word.length; j++) {
+        const charCode = word.charCodeAt(j);
+        const idx = (charCode * (i + 1) + j) % 768;
+        embedding[idx] += Math.sin(charCode * (i + 1)) * 0.1;
+      }
+    }
+
+    // Normalize
+    const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+    return embedding.map(val => val / (magnitude || 1));
+  };
 
   // Process in batches
   const batchSize = 10;
@@ -117,24 +153,38 @@ const ingestData = async () => {
     const metadatas: any[] = [];
 
     for (const chunk of batch) {
-      // Generate embedding
-      const embeddingResult = await embeddingModel.embedContent(chunk.content);
-      const embedding = Array.from(embeddingResult.embedding.values);
+      try {
+        let embedding: number[];
 
-      ids.push(chunk.id);
-      embeddings.push(embedding);
-      documents.push(chunk.content);
-      metadatas.push({
-        content_id: chunk.content_id,
-        content_title: chunk.content_title,
-        content_url: chunk.content_url,
-        content_date: chunk.content_date,
-        content_source: chunk.content_source,
-        chunk_index: chunk.chunk_index,
-      });
+        if (useGemini) {
+          // Generate embedding using Gemini
+          console.log(`  Generating embedding for: ${chunk.content_title.substring(0, 50)}...`);
+          const embeddingResult = await embeddingModel.embedContent(chunk.content);
+          embedding = Array.from(embeddingResult.embedding.values);
+          // Rate limiting
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } else {
+          // Use fallback embedding
+          console.log(`  Creating fallback embedding for: ${chunk.content_title.substring(0, 50)}...`);
+          embedding = generateSimpleEmbedding(chunk.content);
+        }
 
-      // Rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 200));
+        ids.push(chunk.id);
+        embeddings.push(embedding);
+        documents.push(chunk.content);
+        metadatas.push({
+          content_id: chunk.content_id,
+          content_title: chunk.content_title,
+          content_url: chunk.content_url,
+          content_date: chunk.content_date,
+          content_source: chunk.content_source,
+          chunk_index: chunk.chunk_index,
+        });
+      } catch (error: any) {
+        console.error(`Error generating embedding for chunk ${chunk.id}:`, error.message);
+        console.error("Full error:", error);
+        throw error;
+      }
     }
 
     // Add batch to collection

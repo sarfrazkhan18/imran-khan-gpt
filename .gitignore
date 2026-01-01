@@ -37,3 +37,6 @@ next-env.d.ts
 
 # tsn
 tsn.json
+
+# ChromaDB data
+chroma_data/
